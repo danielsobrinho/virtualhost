@@ -6,6 +6,8 @@ TEXTDOMAIN=virtualhost
 action=$1
 domain=$2
 rootDir=$3
+user='dock'
+usergroup='dock'
 owner=$(who am i | awk '{print $1}')
 email='webmaster@localhost'
 sitesEnable='/etc/apache2/sites-enabled/'
@@ -20,9 +22,9 @@ if [ "$(whoami)" != 'root' ]; then
 		exit 1;
 fi
 
-if [ "$action" != 'create' ] && [ "$action" != 'delete' ]
+if [ "$action" != 'create' ] && [ "$action" != 'remove' ]
 	then
-		echo $"You need to prompt for action (create or delete) -- Lower-case only"
+		echo $"You need to prompt for action (create or remove) -- Lower-case only"
 		exit 1;
 fi
 
@@ -36,7 +38,7 @@ if [ "$rootDir" == "" ]; then
 	rootDir=${domain//./}
 fi
 
-### if root dir starts with '/', don't use /var/www as default starting point
+### if root dir starts with '/', don't use /var/www/html as default starting point
 if [[ "$rootDir" =~ ^/ ]]; then
 	userDir=''
 fi
@@ -57,6 +59,7 @@ if [ "$action" == 'create' ]
 			mkdir $rootDir
 			### give permission to root dir
 			chmod 755 $rootDir
+			chown $user:$usergroup $rootDir
 			### write test file in the new domain dir
 			if ! echo "<?php echo phpinfo(); ?>" > $rootDir/phpinfo.php
 			then
@@ -74,18 +77,54 @@ if [ "$action" == 'create' ]
 			ServerName $domain
 			ServerAlias www.$domain
 			DocumentRoot $rootDir
-			<Directory />
-				AllowOverride All
-			</Directory>
+			#<Directory />
+			#	AllowOverride All
+			#</Directory>
 			<Directory $rootDir>
-				Options Indexes FollowSymLinks MultiViews
+			#	Options Indexes FollowSymLinks MultiViews
 				AllowOverride all
-				Require all granted
+			#	Require all granted
 			</Directory>
 			ErrorLog /var/log/apache2/$domain-error.log
 			LogLevel error
 			CustomLog /var/log/apache2/$domain-access.log combined
-		</VirtualHost>" > $sitesAvailabledomain
+		</VirtualHost>
+
+		<IfModule mod_ssl.c>
+		<VirtualHost _default_:443>
+			ServerAdmin $email
+			ServerName $domain
+			ServerAlias www.$domain
+			DocumentRoot $rootDir
+
+			ErrorLog ${APACHE_LOG_DIR}/error.log
+			CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+			SSLEngine on
+
+			SSLCertificateFile	/etc/ssl/certs/ssl-cert-snakeoil.pem
+			SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+
+			#SSLCertificateChainFile /etc/apache2/ssl.crt/server-ca.crt
+
+			#SSLCACertificatePath /etc/ssl/certs/
+			#SSLCACertificateFile /etc/apache2/ssl.crt/ca-bundle.crt
+
+			#SSLCARevocationPath /etc/apache2/ssl.crl/
+			#SSLCARevocationFile /etc/apache2/ssl.crl/ca-bundle.crl
+
+			#SSLVerifyClient require
+			#SSLVerifyDepth  10
+
+			<FilesMatch '\.(cgi|shtml|phtml|php)$'>
+					SSLOptions +StdEnvVars
+			</FilesMatch>
+			<Directory /usr/lib/cgi-bin>
+					SSLOptions +StdEnvVars
+			</Directory>
+
+		</VirtualHost>
+		</IfModule>" > $sitesAvailabledomain
 		then
 			echo -e $"There is an ERROR creating $domain file"
 			exit;
@@ -94,7 +133,7 @@ if [ "$action" == 'create' ]
 		fi
 
 		### Add domain in /etc/hosts
-		if ! echo "127.0.0.1	$domain" >> /etc/hosts
+		if ! echo -e "127.0.0.1	$domain\n127.0.0.1	www.$domain" >> /etc/hosts
 		then
 			echo $"ERROR: Not able to write in /etc/hosts"
 			exit;
@@ -105,7 +144,7 @@ if [ "$action" == 'create' ]
 		if [ "$owner" == "" ]; then
 			chown -R $(whoami):$(whoami) $rootDir
 		else
-			chown -R $owner:$owner $rootDir
+			chown -R $user:$usergroup $rootDir
 		fi
 
 		### enable website
@@ -123,7 +162,7 @@ if [ "$action" == 'create' ]
 			echo -e $"This domain does not exist.\nPlease try another one"
 			exit;
 		else
-			### Delete domain in /etc/hosts
+			### Remove domain in /etc/hosts
 			newhost=${domain//./\\.}
 			sed -i "/$newhost/d" /etc/hosts
 
@@ -133,19 +172,19 @@ if [ "$action" == 'create' ]
 			### restart Apache
 			/etc/init.d/apache2 reload
 
-			### Delete virtual host rules files
+			### Remove virtual host rules files
 			rm $sitesAvailabledomain
 		fi
 
 		### check if directory exists or not
 		if [ -d $rootDir ]; then
-			echo -e $"Delete host root directory ? (y/n)"
+			echo -e $"Remove host root directory ? (y/n)"
 			read deldir
 
 			if [ "$deldir" == 'y' -o "$deldir" == 'Y' ]; then
-				### Delete the directory
+				### Remove the directory
 				rm -rf $rootDir
-				echo -e $"Directory deleted"
+				echo -e $"Directory removed"
 			else
 				echo -e $"Host directory conserved"
 			fi
