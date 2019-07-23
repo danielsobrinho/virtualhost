@@ -23,10 +23,20 @@ $ sudo cp /path/to/virtualhost.sh /usr/local/bin/virtualhost
 
 ```bash
 $ cd /usr/local/bin
-$ wget -O virtualhost https://raw.githubusercontent.com/RoverWire/virtualhost/master/virtualhost.sh
+$ wget -O virtualhost https://raw.githubusercontent.com/danielsobrinho/virtualhost/master/virtualhost.sh
 $ chmod +x virtualhost
-$ wget -O virtualhost-nginx https://raw.githubusercontent.com/RoverWire/virtualhost/master/virtualhost-nginx.sh
+$ wget -O virtualhost-nginx https://raw.githubusercontent.com/danielsobrinho/virtualhost/master/virtualhost-nginx.sh
 $ chmod +x virtualhost-nginx
+```
+
+## Enable SSL on APACHE ##
+
+Basic command line syntax:
+
+```bash
+$ sudo a2enmod ssl
+$ sudo service apache2 restart
+$ sudo make-ssl-cert generate-default-snakeoil --force-overwrite
 ```
 
 ## Usage ##
