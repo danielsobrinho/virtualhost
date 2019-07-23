@@ -119,8 +119,10 @@ if [ "$action" == 'create' ]
 			<FilesMatch '\.(cgi|shtml|phtml|php)$'>
 					SSLOptions +StdEnvVars
 			</FilesMatch>
-			<Directory /usr/lib/cgi-bin>
-					SSLOptions +StdEnvVars
+			<Directory $rootDir>
+			#	Options Indexes FollowSymLinks MultiViews
+				AllowOverride all
+			#	Require all granted
 			</Directory>
 
 		</VirtualHost>
