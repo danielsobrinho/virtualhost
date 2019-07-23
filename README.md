@@ -37,6 +37,7 @@ Basic command line syntax:
 $ sudo a2enmod ssl
 $ sudo service apache2 restart
 $ sudo make-ssl-cert generate-default-snakeoil --force-overwrite
+$ sudo service apache2 restart
 ```
 
 ## Usage ##
